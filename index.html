@@ -40,7 +40,7 @@ class TacticalFrontEndEngine {
         this.initCompass(); this.initHapticAndPTT();
     }
     initCompass() {
-        // Android/Firefox/Chromeの全ブラウザ規制を貫通する最新イベントハンドラ
+        // Android/Firefox/Chromeの全ブラウザ規制を貫通する最新イベントハンドラー
         const handle = (e) => {
             let heading = e.webkitCompassHeading || e.alpha || 0;
             // Firefoxの一部機種で値が反転またはリセットされるバグを吸収
