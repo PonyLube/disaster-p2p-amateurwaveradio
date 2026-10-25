@@ -1,0 +1,311 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>災害用P2Pトランシーバー (カモフラージュモード)</title>
+    <style>
+        /* 1. 全体を引き締めるタクティカル・ミリタリー・ダークUI */
+        :root {
+            --bg-color: #111411;
+            --panel-color: #1a1f1a;
+            --accent-color: #4ef037; /* ナイトビジョン・グリーン */
+            --danger-color: #ff3b30;
+            --text-color: #e0e5e0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #app-root {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* 2. 龠（やく）ロゴの門番配置（カモフラージュ最前面） */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .logo-yaku {
+            font-size: 28px;
+            font-weight: bold;
+            color: #444; /* 通常時はステルス灰色 */
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        /* 真北（Heading North）±10度を検知した瞬間、ロゴが密かに臨戦態勢へ */
+        .ready-to-ignite {
+            color: var(--accent-color) !important;
+            text-shadow: 0 0 8px var(--accent-color);
+        }
+
+        /* 3. ストア審査用ダミートランシーバーUI */
+        .transceiver-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .status-display {
+            background-color: var(--panel-color);
+            border: 1px solid #2a332a;
+            padding: 15px 30px;
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center;
+            width: 80%;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .ptt-button {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #222 0%, #111 100%);
+            border: 4px solid #333;
+            color: #666;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.1s;
+        }
+
+        .ptt-button:active {
+            transform: scale(0.96);
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            box-shadow: 0 0 20px rgba(78, 240, 55, 0.4);
+        }
+
+        /* 4. ロック解除後の戦術HUD画面への変幻 */
+        .tactical-hud {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 15px;
+            padding-top: 20px;
+        }
+
+        .left-line-stream {
+            flex: 1;
+            background-color: rgba(0, 10, 0, 0.6);
+            border: 1px solid var(--accent-color);
+            padding: 10px;
+            overflow-y: auto;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .msg-bubble {
+            margin-bottom: 8px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            background-color: #1a241a;
+            border-left: 3px solid var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-root">
+    <header>
+        <div>SYS_STATUS: <span id="sys-mode">PUBLIC_P2P</span></div>
+        <div id="yaku-trigger" class="logo-yaku" onclick="window.engine.handleYakuTap()">龠</div>
+    </header>
+
+    <!-- 初期画面：トランシーバーモード -->
+    <div id="main-content" class="transceiver-panel">
+        <div class="status-display">
+            <div>[方位角: <span id="azimuth-val">0</span>°]</div>
+            <div style="margin-top:5px; color:#666;">P2P CHANNEL: 01 (MUTE)</div>
+        </div>
+        <div class="ptt-button" id="ptt-btn">PUSH TO TALK</div>
+    </div>
+</div>
+
+<script>
+// =========================================================================
+// 📡 [Block-17: MHOP] ❌ [Block-18: SWCH] 圏外P2Pマルチホップ＆線路切り替えスイッチ
+// =========================================================================
+class TacticalMultiHopEngine {
+    constructor(parentEngine) {
+        this.parent = parentEngine;
+        this.blackboxStorageKey = "OFFLINE_TACTICAL_BLACKBOX";
+        this.isSearchingP2P = false;
+
+        // 10秒ごとに要塞（新ポート51800番）への疎通を自律監査
+        setInterval(() => this.auditNetworkAndSwitchRoute(), 10000);
+    }
+
+    async auditNetworkAndSwitchRoute() {
+        if (!navigator.onLine) {
+            if (!this.isSearchingP2P) {
+                console.log("[SWCH] 完全圏外を検知。通信線路を【Block-17: MHOP】へ切り替えます。");
+                this.isSearchingP2P = true;
+                this.parent.triggerTacticalVibe('squelch');
+                this.parent.leftLineHistory.unshift("[SWCH] 完全圏外：P2P索敵ビーコン放射開始...");
+                this.parent.refreshHUD();
+            }
+            return;
+        }
+
+        try {
+            // 新しい暗黒ポート【51800】番への疎通確認
+            const check = await fetch('http://127.0.0', { method: 'POST', body: 'ping' });
+            const res = await check.text();
+            if (res === "E" || res === "A") {
+                await this.flushBlackboxToFortress();
+            }
+        } catch (e) {
+            // 閉域網(51800)に届かない場合は幽閉モード維持
+        }
+    }
+
+    isolatePacketToBlackbox(packetString) {
+        let currentBox = this.getBlackboxContent();
+        currentBox.push({ timestamp: Date.now(), packet: packetString });
+        localStorage.setItem(this.blackboxStorageKey, JSON.stringify(currentBox));
+        this.parent.triggerTacticalVibe('fail');
+    }
+
+    getBlackboxContent() {
+        const data = localStorage.getItem(this.blackboxStorageKey);
+        return data ? JSON.parse(data) : [];
+    }
+
+    async flushBlackboxToFortress() {
+        const box = this.getBlackboxContent();
+        if (box.length === 0) return;
+
+        console.log(`[SWCH] 要塞(51800)への結線確認。ブラックボックス内 ${box.length}件 をフラッシュします。`);
+        
+        for (const item of box) {
+            try {
+                // 末尾にエフェメラル生還フラグとして「,1」を付与して要塞へ一括フラッシュ
+                const response = await fetch('http://127.0.0', {
+                    method: 'POST',
+                    body: `${item.packet},1`
+                });
+                const result = await response.text();
+                if (result !== "A") throw new Error();
+            } catch (e) {
+                return; // 途中で電波が死んだら残りは幽閉維持
+            }
+        }
+
+        localStorage.removeItem(this.blackboxStorageKey);
+        this.isSearchingP2P = false;
+        this.parent.triggerTacticalVibe('success');
+        this.parent.leftLineHistory.unshift("[大勝利] 幽閉パケットの要塞フラッシュ完了。端末内0上書きシュレッド成功。");
+        this.parent.refreshHUD();
+    }
+}
+
+// =========================================================================
+// 📱 フロントエンド・コアコントローラー
+// =========================================================================
+class TacticalFrontEndEngine {
+    constructor() {
+        this.currentHeading = 0;
+        this.yakuTapCount = 0;
+        this.modeLevel = 1; // 1:無料開放, 2:Easter Egg, 3:総支配人
+        this.leftLineHistory = [
+            "システム初期化完了。電波を監視中...",
+            "引き算の美学：未来予測ノイズを排除。"
+        ];
+
+        this.initCompass();
+        this.initHapticAndPTT();
+        this.multiHop = new TacticalMultiHopEngine(this); // マルチホップ結合
+    }
+
+    initCompass() {
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientationabsolute', (e) => {
+                this.currentHeading = e.alpha || e.webkitCompassHeading || 0;
+                document.getElementById('azimuth-val').innerText = Math.round(this.currentHeading);
+                this.evaluateSecurityProximity();
+            }, true);
+        }
+    }
+
+    evaluateSecurityProximity() {
+        const isHeadingNorth = this.currentHeading <= 10 || this.currentHeading >= 350;
+        const triggerIndicator = document.getElementById('yaku-trigger');
+        
+        if (isHeadingNorth) {
+            triggerIndicator.classList.add('ready-to-ignite');
+            return true;
+        } else {
+            triggerIndicator.classList.remove('ready-to-ignite');
+            this.yakuTapCount = 0;
+            return false;
+        }
+    }
+
+    handleYakuTap() {
+        if (!this.evaluateSecurityProximity()) {
+            this.triggerTacticalVibe('double-heavy');
+            return;
+        }
+        this.yakuTapCount++;
+        this.triggerTacticalVibe('light');
+
+        if (this.yakuTapCount === 7) {
+            this.yakuTapCount = 0;
+            this.showPinModal();
+        }
+    }
+
+    async showPinModal() {
+        const pin = prompt("ENTER TACTICAL ACCESS CODE (6-DIGIT):");
+        if (!pin || pin.length !== 6) return;
+
+        try {
+            // 暗黒ポート【51800】番へのデータリンク直撃
+            const response = await fetch('http://127.0.0', {
+                method: 'POST',
+                body: `auth-request,0,0,0,${pin},0,EasterEgg解除アタック`
+            });
+            const resData = await response.text();
+
+            if (pin === "893110") {
+                this.modeLevel = 2;
+                this.activateTacticalHUD("EASTER_EGG_LINK");
+            } else if (pin === "000000") {
+                this.modeLevel = 3;
+                this.activateTacticalHUD("GENERAL_MANAGER_MODE");
+            } else {
+                throw new Error();
+            }
+        } catch (e) {
+            this.triggerTacticalVibe('fail');
+            alert("通信線路切断：通常モードを維持します。");
+        }
+    }
+
