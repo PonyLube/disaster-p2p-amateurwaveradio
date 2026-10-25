@@ -141,7 +141,6 @@ class TacticalMultiHopEngine {
         this.isSearchingP2P = false;
         setInterval(() => this.auditNetworkAndSwitchRoute(), 10000);
     }
-
     async auditNetworkAndSwitchRoute() {
         if (!navigator.onLine) {
             if (!this.isSearchingP2P) {
@@ -153,38 +152,27 @@ class TacticalMultiHopEngine {
         }
         try {
             const check = await fetch('http://127.0.0', { method: 'POST', body: 'ping' });
-            const res = await check.text();
-            if (res === "E" || res === "A") {
-                await this.flushBlackboxToFortress();
-            }
+            if ((await check.text()) === "A") { await this.flushBlackboxToFortress(); }
         } catch (e) {}
     }
-
     isolatePacketToBlackbox(packetString) {
         let currentBox = this.getBlackboxContent();
         currentBox.push({ timestamp: Date.now(), packet: packetString });
         localStorage.setItem(this.blackboxStorageKey, JSON.stringify(currentBox));
         this.parent.triggerTacticalVibe('fail');
     }
-
     getBlackboxContent() {
         const data = localStorage.getItem(this.blackboxStorageKey);
         return data ? JSON.parse(data) : [];
     }
-
     async flushBlackboxToFortress() {
         const box = this.getBlackboxContent();
         if (box.length === 0) return;
         for (const item of box) {
             try {
-                const response = await fetch('http://127.0.0', {
-                    method: 'POST',
-                    body: `${item.packet},1`
-                });
+                const response = await fetch('http://127.0.0', { method: 'POST', body: `${item.packet},1` });
                 if (await response.text() !== "A") throw new Error();
-            } catch (e) {
-                return;
-            }
+            } catch (e) { return; }
         }
         localStorage.removeItem(this.blackboxStorageKey);
         this.isSearchingP2P = false;
@@ -192,7 +180,6 @@ class TacticalMultiHopEngine {
         this.parent.leftLineHistory.unshift("[大勝利] 幽閉パケット要塞フラッシュ＆シュレッド成功。");
         this.parent.refreshHUD();
     }
-}
 // =========================================================================
 // 📱 フロントエンド・コアコントローラー (長押し競合バグ完全修正) =========================================================================
 // =========================================================================
