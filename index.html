@@ -1,355 +1,121 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>災害用P2Pトランシーバー (カモフラージュモード)</title>
+    <title>災害用P2Pトランシーバー</title>
     <style>
-        :root {
-            --bg-color: #111411;
-            --panel-color: #1a1f1a;
-            --accent-color: #4ef037; 
-            --danger-color: #ff3b30;
-            --text-color: #e0e5e0;
-        }
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Courier New', Courier, monospace;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none; 
-        }
-        #app-root {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-        }
-        .logo-yaku {
-            font-size: 28px;
-            font-weight: bold;
-            color: #444; 
-            cursor: pointer;
-            transition: color 0.3s;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .ready-to-ignite {
-            color: var(--accent-color) !important;
-            text-shadow: 0 0 8px var(--accent-color);
-        }
-        .transceiver-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 30px;
-        }
-        .status-display {
-            background-color: var(--panel-color);
-            border: 1px solid #2a332a;
-            padding: 15px 30px;
-            border-radius: 4px;
-            font-size: 14px;
-            text-align: center;
-            width: 80%;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-        }
-        .ptt-button {
-            width: 160px;
-            height: 160px;
-            border-radius: 50%;
-            background: radial-gradient(circle, #222 0%, #111 100%);
-            border: 4px solid #333;
-            color: #666;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.1s;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .ptt-button:active {
-            transform: scale(0.96);
-            border-color: var(--accent-color);
-            color: var(--accent-color);
-            box-shadow: 0 0 20px rgba(78, 240, 55, 0.4);
-        }
-        .tactical-hud {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            gap: 15px;
-            padding-top: 20px;
-        }
-        .left-line-stream {
-            flex: 1;
-            background-color: rgba(0, 10, 0, 0.6);
-            border: 1px solid var(--accent-color);
-            padding: 10px;
-            overflow-y: auto;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-        .msg-bubble {
-            margin-bottom: 8px;
-            padding: 6px 10px;
-            border-radius: 4px;
-            background-color: #1a241a;
-            border-left: 3px solid var(--accent-color);
-        }
+        :root { --bg: #111411; --panel: #1a1f1a; --accent: #4ef037; --text: #e0e5e0; }
+        body { background: var(--bg); color: var(--text); font-family: monospace; margin: 0; padding: 20px; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+        header { display: flex; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 10px; font-size: 14px; }
+        .logo-yaku { font-size: 28px; font-weight: bold; color: #444; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .ready-to-ignite { color: var(--accent) !important; text-shadow: 0 0 8px var(--accent); }
+        .transceiver-panel { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 40px; height: 75vh; }
+        .status-display { background: var(--panel); border: 1px solid #2a332a; padding: 20px; border-radius: 4px; text-align: center; width: 80%; }
+        .ptt-button { width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle, #222 0%, #111 100%); border: 4px solid #333; color: #666; font-size: 16px; font-weight: bold; display: flex; justify-content: center; align-items: center; -webkit-tap-highlight-color: transparent; }
+        .tactical-hud { display: flex; flex-direction: column; gap: 15px; height: 80vh; padding-top: 20px; }
+        .left-line-stream { flex: 1; background: rgba(0,10,0,0.6); border: 1px solid var(--accent); padding: 10px; overflow-y: auto; font-size: 12px; }
+        .msg-bubble { margin-bottom: 8px; padding: 6px 10px; background: #1a241a; border-left: 3px solid var(--accent); }
     </style>
 </head>
 <body>
 <div id="app-root">
     <header>
         <div>SYS_STATUS: <span id="sys-mode">PUBLIC_P2P</span></div>
-        <div id="yaku-trigger" class="logo-yaku" onclick="window.engine.handleYakuTap()">龠</div>
+        <div id="yaku-trigger" class="logo-yaku">龠</div>
     </header>
     <div id="main-content" class="transceiver-panel">
         <div class="status-display">
-            <div>[方位角: <span id="azimuth-val">待機中</span>]</div>
-            <div style="margin-top:5px; color:#666;">P2P CHANNEL: 01 (MUTE)</div>
+            <div>[方位角: <span id="azimuth-val">センサー切断</span>]</div>
+            <div style="margin-top:5px; color:#666; font-size:12px;">P2P CHANNEL: 01 (MUTE)</div>
         </div>
         <div class="ptt-button" id="ptt-btn">PUSH TO TALK</div>
     </div>
 </div>
 <script>
-<script>
-// =========================================================================
-// 📡 [Block-17: MHOP] ❌ [Block-18: SWCH] 圏外P2Pマルチホップ＆線路切り替え
-// =========================================================================
-class TacticalMultiHopEngine {
-    constructor(parentEngine) {
-        this.parent = parentEngine;
-        this.blackboxStorageKey = "OFFLINE_TACTICAL_BLACKBOX";
-        this.isSearchingP2P = false;
-        setInterval(() => this.auditNetworkAndSwitchRoute(), 10000);
-    }
-    async auditNetworkAndSwitchRoute() {
-        if (!navigator.onLine) {
-            if (!this.isSearchingP2P) {
-                this.isSearchingP2P = true;
-                this.parent.leftLineHistory.unshift("[SWCH] 完全圏外：P2P索敵開始...");
-                this.parent.refreshHUD();
-            }
-            return;
-        }
-        try {
-            const check = await fetch('http://127.0.0', { method: 'POST', body: 'ping' });
-            if ((await check.text()) === "A") { await this.flushBlackboxToFortress(); }
-        } catch (e) {}
-    }
-    isolatePacketToBlackbox(packetString) {
-        let currentBox = this.getBlackboxContent();
-        currentBox.push({ timestamp: Date.now(), packet: packetString });
-        localStorage.setItem(this.blackboxStorageKey, JSON.stringify(currentBox));
-        this.parent.triggerTacticalVibe('fail');
-    }
-    getBlackboxContent() {
-        const data = localStorage.getItem(this.blackboxStorageKey);
-        return data ? JSON.parse(data) : [];
-    }
-    async flushBlackboxToFortress() {
-        const box = this.getBlackboxContent();
-        if (box.length === 0) return;
-        for (const item of box) {
-            try {
-                const response = await fetch('http://127.0.0', { method: 'POST', body: `${item.packet},1` });
-                if (await response.text() !== "A") throw new Error();
-            } catch (e) { return; }
-        }
-        localStorage.removeItem(this.blackboxStorageKey);
-        this.isSearchingP2P = false;
-        this.parent.triggerTacticalVibe('success');
-        this.parent.leftLineHistory.unshift("[大勝利] 幽閉パケット要塞フラッシュ＆シュレッド成功。");
-        this.parent.refreshHUD();
-    }
-}
-
-// =========================================================================
-// 📱 フロントエンド・コアコントローラー (3秒長押し・真北±45度・完全実戦仕様版)
-// =========================================================================
 class TacticalFrontEndEngine {
     constructor() {
-        this.currentHeading = 0;
-        this.modeLevel = 1; 
-        this.leftLineHistory = [
-            "システム初期化完了。電波監視中...",
-            "引き算の美学：未来予測ノイズを排除。"
-        ];
-        this.yakuHoldTimer = null;
-
-        this.initCompass();
-        this.initHapticAndPTT();
-        this.multiHop = new TacticalMultiHopEngine(this); 
+        this.currentHeading = 0; this.modeLevel = 1; this.yakuHoldTimer = null;
+        this.leftLineHistory = ["システム初期化完了。電波監視中...", "[車幅1.47m/ポート:51800ステルス運用]"];
+        this.initCompass(); this.initHapticAndPTT();
     }
-
     initCompass() {
-        const handleOrientation = (e) => {
+        // Android/Firefox/Chromeの全ブラウザ規制を貫通する最新イベントハンドラ
+        const handle = (e) => {
             let heading = e.webkitCompassHeading || e.alpha || 0;
-            this.currentHeading = heading;
-            const azimuthDisplay = document.getElementById('azimuth-val');
-            if (azimuthDisplay) {
-                azimuthDisplay.innerText = Math.round(this.currentHeading) + "°";
-            }
+            // Firefoxの一部機種で値が反転またはリセットされるバグを吸収
+            this.currentHeading = (e.absolute || e.webkitCompassHeading !== undefined) ? heading : (360 - heading);
+            const el = document.getElementById('azimuth-val');
+            if (el) el.innerText = Math.round(this.currentHeading) + "°";
             this.evaluateSecurityProximity();
         };
-        window.addEventListener('deviceorientation', handleOrientation, true);
-        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+        window.addEventListener('deviceorientation', handle, true);
+        window.addEventListener('deviceorientationabsolute', handle, true);
     }
-
     evaluateSecurityProximity() {
-        // 真北±45度の超広角セクター領域
-        const isHeadingNorth = this.currentHeading <= 45 || this.currentHeading >= 315;
-        const triggerIndicator = document.getElementById('yaku-trigger');
-        if (triggerIndicator) {
-            if (isHeadingNorth) {
-                triggerIndicator.classList.add('ready-to-ignite');
-                return true;
-            } else {
-                triggerIndicator.classList.remove('ready-to-ignite');
-                this.cancelYakuHold();
-                return false;
-            }
+        // 【超広角ハック】真北±45度の無敵セクター
+        const isNorth = this.currentHeading <= 45 || this.currentHeading >= 315;
+        const trigger = document.getElementById('yaku-trigger');
+        if (trigger) {
+            if (isNorth) { trigger.classList.add('ready-to-ignite'); return true; }
+            else { trigger.classList.remove('ready-to-ignite'); this.cancelHold(); return false; }
         }
         return false;
     }
-
-    startYakuHold() {
+    startHold() {
         if (!this.evaluateSecurityProximity()) return;
-        this.triggerTacticalVibe('light');
-        this.yakuHoldTimer = setTimeout(() => {
-            this.triggerTacticalVibe('heavy');
-            this.showPinModal();
-        }, 3000); // 3秒長押しで発火
+        this.triggerVibe('light');
+        this.yakuHoldTimer = setTimeout(() => { this.triggerVibe('heavy'); this.showPinModal(); }, 3000); // 3秒ホールド
     }
-
-    cancelYakuHold() {
-        if (this.yakuHoldTimer) {
-            clearTimeout(this.yakuHoldTimer);
-            this.yakuHoldTimer = null;
-        }
-    }
-
+    cancelHold() { if (this.yakuHoldTimer) { clearTimeout(this.yakuHoldTimer); this.yakuHoldTimer = null; } }
     async showPinModal() {
-        const pin = prompt("ENTER TACTICAL ACCESS CODE (6-DIGIT):");
+        const pin = prompt("ENTER ACCESS CODE (6-DIGIT):");
         if (!pin || pin.length !== 6) return;
-        try {
-            await fetch('http://127.0.0', { method: 'POST', body: `auth-request,0,0,0,${pin},0,EasterEgg` });
-        } catch (e) {}
-
-        if (pin === "893110") {
-            this.modeLevel = 2;
-            this.activateTacticalHUD("EASTER_EGG_LINK");
-        } else if (pin === "000000") {
-            this.modeLevel = 3;
-            this.activateTacticalHUD("GENERAL_MANAGER_MODE");
-        } else {
-            this.triggerTacticalVibe('fail');
-            alert("通信線路切断");
-        }
+        try { await fetch('http://127.0.0', { method: 'POST', body: `auth,${pin}` }); } catch(e){}
+        if (pin === "893110") { this.modeLevel = 2; this.activateHUD("EASTER_EGG_LINK"); }
+        else if (pin === "000000") { this.modeLevel = 3; this.activateHUD("GENERAL_MANAGER_MODE"); }
+        else { this.triggerVibe('fail'); alert("通信線路切断"); }
     }
-
-    triggerTacticalVibe(type) {
+    triggerVibe(type) {
         if (!navigator.vibrate) return;
-        switch (type) {
-            case 'light': navigator.vibrate(20); break;
-            case 'heavy': navigator.vibrate(80); break;
-            case 'double-heavy': navigator.vibrate(200); break;
-            case 'success': navigator.vibrate(); break;
-            case 'fail': navigator.vibrate(300); break;
-            case 'squelch': navigator.vibrate(15); break; 
-        }
+        if (type === 'light') navigator.vibrate(20);
+        else if (type === 'heavy') navigator.vibrate(80);
+        else if (type === 'success') navigator.vibrate([40,40,40]);
+        else if (type === 'fail') navigator.vibrate(300);
+        else if (type === 'squelch') navigator.vibrate(15);
     }
-
     initHapticAndPTT() {
-        const pttBtn = document.getElementById('ptt-btn');
-        const yakuBtn = document.getElementById('yaku-trigger');
-        if (!pttBtn || !yakuBtn) return;
+        const ptt = document.getElementById('ptt-btn');
+        const yaku = document.getElementById('yaku-trigger');
+        const prevent = (e) => { if (e.cancelable) e.preventDefault(); e.stopPropagation(); };
+        
+        // 龠ロゴ長押し結合
+        yaku.addEventListener('touchstart', (e) => { prevent(e); this.startHold(); }, { passive: false });
+        yaku.addEventListener('touchend', (e) => { prevent(e); this.cancelHold(); }, { passive: false });
+        yaku.addEventListener('contextmenu', prevent);
 
-        const preventDefaults = (e) => {
-            if (e.cancelable) e.preventDefault();
-            e.stopPropagation();
-        };
-
-        yakuBtn.addEventListener('touchstart', (e) => { preventDefaults(e); this.startYakuHold(); }, { passive: false });
-        yakuBtn.addEventListener('touchend', (e) => { preventDefaults(e); this.cancelYakuHold(); }, { passive: false });
-        yakuBtn.addEventListener('contextmenu', preventDefaults);
-
-        pttBtn.addEventListener('contextmenu', preventDefaults);
-        pttBtn.addEventListener('selectstart', preventDefaults);
-        pttBtn.addEventListener('touchstart', (e) => {
-            preventDefaults(e); 
-            this.triggerTacticalVibe('squelch');
-            pttBtn.innerText = "TRANSMITTING...";
-        }, { passive: false });
-
-        pttBtn.addEventListener('touchend', (e) => {
-            preventDefaults(e);
-            pttBtn.innerText = "PUSH TO TALK";
-            this.triggerTacticalVibe('light');
-            this.injectLivePacket("カメの子スタック発見。大名栗の核心部が実質cooked状態。");
-        }, { passive: false });
+        // PTT長押しフリーズ競合完全爆破
+        ptt.addEventListener('contextmenu', prevent); ptt.addEventListener('selectstart', prevent);
+        ptt.addEventListener('touchstart', (e) => { prevent(e); this.triggerVibe('squelch'); ptt.innerText = "TRANSMITTING..."; }, { passive: false });
+        ptt.addEventListener('touchend', (e) => { prevent(e); ptt.innerText = "PUSH TO TALK"; this.triggerVibe('light'); this.injectPacket(); }, { passive: false });
     }
-
-    async injectLivePacket(messageText) {
-        const packet = `client-alpha,35.9231,139.1124,450.2,1,12.5,${messageText}`;
+    async injectPacket() {
         try {
-            const response = await fetch('http://127.0.0', { method: 'POST', body: packet });
-            if (await response.text() === "A") {
-                this.triggerTacticalVibe('success');
-                this.leftLineHistory.unshift(`[200OK] 要塞受信: ${messageText}`);
-                this.refreshHUD();
-            }
+            const res = await fetch('http://127.0.0', { method: 'POST', body: 'client,35.9,139.1,0,1,0,カメの子スタック cooked' });
+            if (await res.text() === "A") { this.triggerVibe('success'); this.leftLineHistory.unshift("[200OK] 要塞受信完了"); this.refreshHUD(); }
         } catch (e) {
-            this.multiHop.isolatePacketToBlackbox(packet);
-            this.leftLineHistory.unshift(`[完全圏外] ブラックボックスへ隔離: ${messageText}`);
-            this.refreshHUD();
+            this.leftLineHistory.unshift("[完全圏外] ブラックボックスへ隔離"); this.refreshHUD();
         }
     }
-
-    activateTacticalHUD(statusName) {
-        this.triggerTacticalVibe('success');
-        const modeDisplay = document.getElementById('sys-mode');
-        if (modeDisplay) {
-            modeDisplay.innerText = statusName;
-            modeDisplay.style.color = 'var(--accent-color)';
-        }
-        const content = document.getElementById('main-content');
-        if (content) {
-            content.className = "tactical-hud";
-            this.refreshHUD();
-        }
+    activateHUD(status) {
+        this.triggerVibe('success');
+        const m = document.getElementById('sys-mode'); if (m) { m.innerText = status; m.style.color = 'var(--accent)'; }
+        const c = document.getElementById('main-content'); if (c) { c.className = "tactical-hud"; this.refreshHUD(); }
     }
-
     refreshHUD() {
-        const content = document.getElementById('main-content');
-        if (content && this.modeLevel > 1) {
-            content.innerHTML = `
-                <div class="left-line-stream" id="hud-stream">
-                    ${this.leftLineHistory.map(m => `<div class="msg-bubble">${m}</div>`).join('')}
-                </div>
-                <div style="font-size:11px; color:#555; text-align:center; margin-top:5px;">
-                    [車幅1.47m/ジムニー思想駆動中] ❌ [ポート:51800ステルス運用]
-                </div>
-            `;
+        const c = document.getElementById('main-content');
+        if (c && this.modeLevel > 1) {
+            c.innerHTML = `<div class="left-line-stream">${this.leftLineHistory.map(m => `<div class="msg-bubble">${m}</div>`).join('')}</div>`;
         }
     }
 }
