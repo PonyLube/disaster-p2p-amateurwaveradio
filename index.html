@@ -199,14 +199,18 @@ class TacticalMultiHopEngine {
 // 📱 フロントエンド・コアコントローラー (真北±45度・超広角実戦仕様版)
 // =========================================================================
 class TacticalFrontEndEngine {
+// =========================================================================
+// 📱 フロントエンド・コアコントローラー (3秒長押し・真北±45度・完全実戦仕様)
+// =========================================================================
+class TacticalFrontEndEngine {
     constructor() {
         this.currentHeading = 0;
-        this.yakuTapCount = 0;
         this.modeLevel = 1; 
         this.leftLineHistory = [
             "システム初期化完了。電波監視中...",
             "引き算の美学：未来予測ノイズを排除。"
         ];
+        this.yakuHoldTimer = null; // 長押し用タイマー
 
         this.initCompass();
         this.initHapticAndPTT();
@@ -229,11 +233,8 @@ class TacticalFrontEndEngine {
         window.addEventListener('deviceorientationabsolute', handleOrientation, true);
     }
 
-    /**
-     * 【実戦仕様ハック】ロック受付範囲を「真北±45度」へ超拡大！
-     * 315度から45度の間（北東から北西までの広い扇形）ならどこでもReady点滅が発火します。
-     */
     evaluateSecurityProximity() {
+        // 真北±45度の超広角セクター領域
         const isHeadingNorth = this.currentHeading <= 45 || this.currentHeading >= 315;
         const triggerIndicator = document.getElementById('yaku-trigger');
         
@@ -243,24 +244,34 @@ class TacticalFrontEndEngine {
                 return true;
             } else {
                 triggerIndicator.classList.remove('ready-to-ignite');
-                this.yakuTapCount = 0;
+                this.cancelYakuHold(); // 方位が外れたら長押しタイマーを即時シュレッド
                 return false;
             }
         }
         return false;
     }
 
-    handleYakuTap() {
+    /**
+     * 【大覚醒ハック】タップを廃止し、3秒間のホールド（長押し）で安全・確実に発火
+     */
+    startYakuHold() {
         if (!this.evaluateSecurityProximity()) {
             this.triggerTacticalVibe('double-heavy');
             return;
         }
-        this.yakuTapCount++;
         this.triggerTacticalVibe('light');
-
-        if (this.yakuTapCount === 7) {
-            this.yakuTapCount = 0;
+        
+        // 3秒（3000ms）間、真北のままホールドされたら暗証番号入力へ突入
+        this.yakuHoldTimer = setTimeout(() => {
+            this.triggerTacticalVibe('heavy');
             this.showPinModal();
+        }, 3000);
+    }
+
+    cancelYakuHold() {
+        if (this.yakuHoldTimer) {
+            clearTimeout(this.yakuHoldTimer);
+            this.yakuHoldTimer = null;
         }
     }
 
@@ -293,23 +304,30 @@ class TacticalFrontEndEngine {
             case 'light': navigator.vibrate(20); break;
             case 'heavy': navigator.vibrate(80); break;
             case 'double-heavy': navigator.vibrate(200); break;
-            case 'success': navigator.vibrate(); break;
-            case 'fail': navigator.vibrate(); break;
+            case 'success': navigator.vibrate([100, 50, 100]); break;
+            case 'fail': navigator.vibrate(500); break;
             case 'squelch': navigator.vibrate(15); break; 
         }
     }
 
     initHapticAndPTT() {
         const pttBtn = document.getElementById('ptt-btn');
-        if (!pttBtn) return;
+        const yakuBtn = document.getElementById('yaku-trigger');
+        if (!pttBtn || !yakuBtn) return;
 
         const preventDefaults = (e) => {
             if (e.cancelable) e.preventDefault();
             e.stopPropagation();
         };
+
+        // 龠（やく）ロゴへの長押しイベントの完全結合
+        yakuBtn.addEventListener('touchstart', (e) => { preventDefaults(e); this.startYakuHold(); }, { passive: false });
+        yakuBtn.addEventListener('touchend', (e) => { preventDefaults(e); this.cancelYakuHold(); }, { passive: false });
+        yakuBtn.addEventListener('contextmenu', preventDefaults);
+
+        // PTTボタン側の長押し競合完全防止ガード
         pttBtn.addEventListener('contextmenu', preventDefaults);
         pttBtn.addEventListener('selectstart', preventDefaults);
-
         pttBtn.addEventListener('touchstart', (e) => {
             preventDefaults(e); 
             this.triggerTacticalVibe('squelch');
@@ -327,10 +345,7 @@ class TacticalFrontEndEngine {
     async injectLivePacket(messageText) {
         const packet = `client-alpha,35.9231,139.1124,450.2,1,12.5,${messageText}`;
         try {
-            const response = await fetch('http://127.0.0', {
-                method: 'POST',
-                body: packet
-            });
+            const response = await fetch('http://127.0.0', { method: 'POST', body: packet });
             if (await response.text() === "A") {
                 this.triggerTacticalVibe('success');
                 this.leftLineHistory.unshift(`[200OK] 要塞受信: ${messageText}`);
