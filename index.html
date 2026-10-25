@@ -194,7 +194,9 @@ class TacticalMultiHopEngine {
     }
 }
 // =========================================================================
-// 📱 フロントエンド・コアコントローラー (長押し競合バグ完全修正版)
+// 📱 フロントエンド・コアコントローラー (長押し競合バグ完全修正) =========================================================================
+// =========================================================================
+// 📱 フロントエンド・コアコントローラー (真北±45度・超広角実戦仕様版)
 // =========================================================================
 class TacticalFrontEndEngine {
     constructor() {
@@ -203,7 +205,7 @@ class TacticalFrontEndEngine {
         this.modeLevel = 1; 
         this.leftLineHistory = [
             "システム初期化完了。電波監視中...",
-            "引き戦の美学：未来予測ノイズを排除。"
+            "引き算の美学：未来予測ノイズを排除。"
         ];
 
         this.initCompass();
@@ -227,8 +229,12 @@ class TacticalFrontEndEngine {
         window.addEventListener('deviceorientationabsolute', handleOrientation, true);
     }
 
+    /**
+     * 【実戦仕様ハック】ロック受付範囲を「真北±45度」へ超拡大！
+     * 315度から45度の間（北東から北西までの広い扇形）ならどこでもReady点滅が発火します。
+     */
     evaluateSecurityProximity() {
-        const isHeadingNorth = this.currentHeading <= 10 || this.currentHeading >= 350;
+        const isHeadingNorth = this.currentHeading <= 45 || this.currentHeading >= 315;
         const triggerIndicator = document.getElementById('yaku-trigger');
         
         if (triggerIndicator) {
@@ -287,8 +293,8 @@ class TacticalFrontEndEngine {
             case 'light': navigator.vibrate(20); break;
             case 'heavy': navigator.vibrate(80); break;
             case 'double-heavy': navigator.vibrate(200); break;
-            case 'success': navigator.vibrate([40, 40, 40]); break;
-            case 'fail': navigator.vibrate([100, 50, 100]); break;
+            case 'success': navigator.vibrate(); break;
+            case 'fail': navigator.vibrate(); break;
             case 'squelch': navigator.vibrate(15); break; 
         }
     }
