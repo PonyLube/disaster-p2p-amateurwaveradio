@@ -131,6 +131,7 @@
     </div>
 </div>
 <script>
+<script>
 // =========================================================================
 // 📡 [Block-17: MHOP] ❌ [Block-18: SWCH] 圏外P2Pマルチホップ＆線路切り替え
 // =========================================================================
@@ -180,14 +181,42 @@ class TacticalMultiHopEngine {
         this.parent.leftLineHistory.unshift("[大勝利] 幽閉パケット要塞フラッシュ＆シュレッド成功。");
         this.parent.refreshHUD();
     }
+}
+
 // =========================================================================
-// 📱 フロントエンド・コアコントローラー (長押し競合バグ完全修正) =========================================================================
+// 📱 フロントエンド・コアコントローラー (3秒長押し・真北±45度・完全実戦仕様版)
 // =========================================================================
-// 📱 フロントエンド・コアコントローラー (真北±45度・超広角実戦仕様版)
-// =========================================================================
-// =========================================================================
-// 📱 フロントエンド・コアコントローラー (3秒長押し・真北±45度・完全実戦仕様)
-// =========================================================================
+class TacticalFrontEndEngine {
+    constructor() {
+        this.currentHeading = 0;
+        this.modeLevel = 1; 
+        this.leftLineHistory = [
+            "システム初期化完了。電波監視中...",
+            "引き算の美学：未来予測ノイズを排除。"
+        ];
+        this.yakuHoldTimer = null;
+
+        this.initCompass();
+        this.initHapticAndPTT();
+        this.multiHop = new TacticalMultiHopEngine(this); 
+    }
+
+    initCompass() {
+        const handleOrientation = (e) => {
+            let heading = e.webkitCompassHeading || e.alpha || 0;
+            this.currentHeading = heading;
+            const azimuthDisplay = document.getElementById('azimuth-val');
+            if (azimuthDisplay) {
+                azimuthDisplay.innerText = Math.round(this.currentHeading) + "°";
+            }
+            this.evaluateSecurityProximity();
+        };
+        window.addEventListener('deviceorientation', handleOrientation, true);
+        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+    }
+
+    evaluateSecurityProximity() {
+        // 真北±45度の超広角セクター領域
         const isHeadingNorth = this.currentHeading <= 45 || this.currentHeading >= 315;
         const triggerIndicator = document.getElementById('yaku-trigger');
         if (triggerIndicator) {
